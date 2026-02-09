@@ -1,0 +1,40 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+
+# Node
+node_modules/
+dist/
+build/
+.npm/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+
+# Logs
+*.log
+
+# Env files (keep examples)
+.env
+.env.local
+.env.*
+!.env.example
+
+# Database / runtime data
+*.db
+*.sqlite
+*.sqlite3
+/backend_data/
+/backend/data/
+
+# Docker
+*.pid
