@@ -1,0 +1,66 @@
+﻿version: '3.9'
+
+services:
+  backend:
+    build: ./backend
+    container_name: lognexa-backend
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - backend_data:/app/data
+    environment:
+      - DATABASE_URL=sqlite:///./data/lognexa.db
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:5173,http://frontend
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3}
+      - HF_TOKEN=${HF_TOKEN:-}
+      - HF_MODEL=${HF_MODEL:-mistralai/Mistral-7B-Instruct-v0.2}
+      - LOG_LEVEL=info
+    ports:
+      - "8000:8000"
+    depends_on:
+      - service-a
+      - service-b
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_URL=/api
+        - VITE_SSE_URL=/api/stream/logs
+    container_name: lognexa-frontend
+    restart: unless-stopped
+    profiles: ["frontend"]
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+  service-a:
+    build: ./sample-services/service-a
+    container_name: lognexa-service-a
+    restart: unless-stopped
+    environment:
+      - PORT=3001
+    ports:
+      - "3001:3001"
+
+  service-b:
+    build: ./sample-services/service-b
+    container_name: lognexa-service-b
+    restart: unless-stopped
+
+  # Optional local LLM
+  # Start with: docker compose --profile ollama up --build
+  ollama:
+    image: ollama/ollama:latest
+    container_name: lognexa-ollama
+    profiles: ["ollama"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+volumes:
+  backend_data:
+  ollama_data:
