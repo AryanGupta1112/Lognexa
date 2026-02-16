@@ -1,0 +1,59 @@
+﻿:root {
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --radius: 14px;
+}
+
+.dark {
+  --background: 222 18% 10%;
+  --foreground: 210 40% 98%;
+  --card: 222 18% 14%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222 18% 12%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 168 76% 44%;
+  --primary-foreground: 222 22% 12%;
+  --secondary: 30 85% 55%;
+  --secondary-foreground: 24 20% 15%;
+  --accent: 190 80% 50%;
+  --accent-foreground: 210 40% 98%;
+  --muted: 223 15% 22%;
+  --muted-foreground: 215 20% 70%;
+  --destructive: 350 72% 52%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 223 14% 22%;
+  --input: 223 16% 20%;
+  --ring: 168 76% 44%;
+  --chart-1: 168 76% 44%;
+  --chart-2: 30 85% 55%;
+  --chart-3: 348 66% 58%;
+  --chart-4: 200 80% 58%;
+  --chart-5: 260 70% 62%;
+}
+
+.light {
+  --background: 210 40% 98%;
+  --foreground: 222 20% 16%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 20% 16%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 20% 16%;
+  --primary: 168 76% 36%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 30 85% 50%;
+  --secondary-foreground: 222 20% 16%;
+  --accent: 190 80% 44%;
+  --accent-foreground: 210 40% 98%;
+  --muted: 210 20% 92%;
+  --muted-foreground: 215 16% 46%;
+  --destructive: 350 72% 52%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 210 16% 88%;
+  --input: 210 16% 88%;
+  --ring: 168 76% 36%;
+  --chart-1: 168 76% 36%;
+  --chart-2: 30 85% 50%;
+  --chart-3: 348 66% 58%;
+  --chart-4: 200 80% 50%;
+  --chart-5: 260 70% 58%;
+}
