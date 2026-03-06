@@ -24,9 +24,11 @@ export function Sidebar() {
       )}
     >
       <div className='flex items-center gap-3 px-6 py-6'>
-        <div className='h-10 w-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center font-display text-lg'>
-          L
-        </div>
+        <img
+          src='/my-logo.png'
+          alt='LOGNEXA logo'
+          className='h-10 w-10 rounded-xl object-cover ring-1 ring-border/60'
+        />
         <div>
           <h1 className='text-lg font-semibold tracking-tight'>LOGNEXA</h1>
           <p className='text-xs text-muted-foreground'>AI Log Intelligence</p>
