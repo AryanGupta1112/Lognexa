@@ -17,6 +17,7 @@ from .models import LogEntry
 from .routes import router
 from .incident_manager import IncidentManager
 from .sse import LogBroadcaster
+from .vector_store import VectorStore
 
 
 app = FastAPI(title="LOGNEXA API", version="1.0.0")
@@ -69,6 +70,13 @@ async def startup():
     app.state.loop = asyncio.get_event_loop()
     app.state.broadcaster = LogBroadcaster()
     app.state.stop_event = threading.Event()
+    app.state.vector_store = VectorStore()
+    incident_manager = IncidentManager()
+    app.state.incident_manager = incident_manager
+
+    with Session(engine) as session:
+        existing_logs = session.exec(select(LogEntry).order_by(LogEntry.id)).all()
+    app.state.vector_store.index_logs(existing_logs)
 
     def on_log(log_data):
         with Session(engine) as session:
@@ -87,6 +95,12 @@ async def startup():
                 "tags": entry.tags,
             }
 
+        app.state.vector_store.index_log(entry)
+
+        if entry.level in {"ERROR", "WARN"}:
+            with Session(engine) as session:
+                incident_manager.scan(session)
+
         if app.state.loop:
             asyncio.run_coroutine_threadsafe(
                 app.state.broadcaster.publish(event),
@@ -96,9 +110,6 @@ async def startup():
     collector = DockerLogCollector(on_log=on_log)
     collector.start()
     app.state.collector = collector
-
-    incident_manager = IncidentManager()
-    app.state.incident_manager = incident_manager
 
     def incident_loop():
         while not app.state.stop_event.is_set():
