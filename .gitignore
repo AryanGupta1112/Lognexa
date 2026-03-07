@@ -20,6 +20,9 @@ __pycache__/
 venv/
 .pytest_cache/
 
+docs/project_deep_dive.md
+docs/project_story.md
+
 # Logs
 *.log
 

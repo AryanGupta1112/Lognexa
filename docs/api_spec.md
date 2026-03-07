@@ -1,4 +1,4 @@
-﻿# LOGNEXA API Spec
+# LOGNEXA API Spec
 
 Base URL: `http://localhost:8000`
 
@@ -11,7 +11,19 @@ Response:
 {
   "status": "ok",
   "time": "2026-02-09T12:34:56Z",
-  "llm": { "ollama": true, "huggingface": false }
+  "llm": {
+    "provider": "groq",
+    "configured": true,
+    "model": "llama-3.3-70b-versatile"
+  },
+  "vectordb": {
+    "enabled": true,
+    "provider": "qdrant",
+    "url": "http://localhost:6333",
+    "collection": "lognexa_logs",
+    "model": "BAAI/bge-small-en-v1.5",
+    "ready": true
+  }
 }
 ```
 
@@ -60,6 +72,8 @@ Parameters:
   "ai_related_signals": ["..."]
 }
 ```
+
+The analyze route uses Groq plus RAG when Qdrant is available. It embeds stored logs, retrieves semantically related historical context, and injects that context into the prompt before generating the final structured explanation.
 
 ## Stream
 
