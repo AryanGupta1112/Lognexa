@@ -1,5 +1,5 @@
-﻿import { useEffect, useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Code } from 'lucide-react'
 import { toast } from 'sonner'
@@ -9,14 +9,16 @@ import { oneDark } from '@codemirror/theme-one-dark'
 import { highlightSelectionMatches, SearchQuery, setSearchQuery, searchKeymap } from '@codemirror/search'
 import { keymap } from '@codemirror/view'
 
-import { getLogs, createLogStream, type LogEntry } from '../lib/api'
+import { analyzeSelectedLogs, createLogStream, getLogs, type LogEntry } from '../lib/api'
 import { useUiStore } from '../lib/store'
 import { rangeToStart } from '../lib/time'
-import { LogTable } from '../components/log-table'
-import { Skeleton } from '../components/ui/skeleton'
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '../components/ui/drawer'
+import { AiAnalysisCard } from '../components/ai-analysis-card'
 import { EmptyState } from '../components/empty-state'
+import { LogTable } from '../components/log-table'
+import { Button } from '../components/ui/button'
+import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '../components/ui/drawer'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
+import { Skeleton } from '../components/ui/skeleton'
 
 export function LogsPage() {
   const selectedService = useUiStore((s) => s.selectedService)
@@ -39,6 +41,8 @@ export function LogsPage() {
 
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [selected, setSelected] = useState<LogEntry | null>(null)
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
+  const [analysisOpen, setAnalysisOpen] = useState(false)
   const [editorView, setEditorView] = useState<any>(null)
 
   useEffect(() => {
@@ -66,6 +70,11 @@ export function LogsPage() {
     editorView.dispatch({ effects: setSearchQuery.of(query) })
   }, [editorView, search])
 
+  useEffect(() => {
+    const validIds = new Set(logs.map((log) => log.id))
+    setSelectedIds((prev) => prev.filter((id) => validIds.has(id)))
+  }, [logs])
+
   const filteredLogs = useMemo(() => {
     return logs.filter((log) => {
       if (selectedService !== 'all' && log.service !== selectedService) return false
@@ -75,25 +84,72 @@ export function LogsPage() {
     })
   }, [logs, search, selectedService, levelFilter])
 
+  const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds])
+  const selectedLogs = useMemo(
+    () => logs.filter((log) => selectedIdSet.has(log.id)).sort((a, b) => a.timestamp.localeCompare(b.timestamp)),
+    [logs, selectedIdSet]
+  )
+
+  const analyzeSelectionMutation = useMutation({
+    mutationFn: () => analyzeSelectedLogs(selectedIds),
+    onSuccess: () => {
+      setAnalysisOpen(true)
+      toast.success('Selected logs analyzed')
+    },
+    onError: () => toast.error('Failed to analyze selected logs')
+  })
+
+  const toggleSelection = (logId: number) => {
+    setSelectedIds((prev) => (prev.includes(logId) ? prev.filter((id) => id !== logId) : [...prev, logId]))
+  }
+
+  const toggleSelectAllVisible = () => {
+    const visibleIds = filteredLogs.map((log) => log.id)
+    const everyVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIdSet.has(id))
+
+    if (everyVisibleSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !visibleIds.includes(id)))
+      return
+    }
+
+    setSelectedIds((prev) => Array.from(new Set([...prev, ...visibleIds])))
+  }
+
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
-      <div className='flex flex-wrap items-center justify-between gap-4 mb-4'>
+      <div className='mb-4 flex flex-wrap items-center justify-between gap-4'>
         <div>
           <h2 className='text-2xl font-semibold'>Logs</h2>
           <p className='text-sm text-muted-foreground'>Interactive log exploration with rich metadata.</p>
         </div>
-        <Select value={levelFilter} onValueChange={setLevelFilter}>
-          <SelectTrigger className='w-[160px] bg-muted/40'>
-            <SelectValue placeholder='Level' />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value='all'>All levels</SelectItem>
-            <SelectItem value='ERROR'>Error</SelectItem>
-            <SelectItem value='WARN'>Warn</SelectItem>
-            <SelectItem value='INFO'>Info</SelectItem>
-            <SelectItem value='DEBUG'>Debug</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className='flex flex-wrap items-center gap-3'>
+          <Button
+            variant='secondary'
+            onClick={() => analyzeSelectionMutation.mutate()}
+            disabled={selectedIds.length === 0 || analyzeSelectionMutation.isPending}
+          >
+            {analyzeSelectionMutation.isPending
+              ? 'Analyzing selected logs...'
+              : `Analyze selected logs (${selectedIds.length})`}
+          </Button>
+          {selectedIds.length > 0 ? (
+            <Button variant='outline' onClick={() => setSelectedIds([])}>
+              Clear selection
+            </Button>
+          ) : null}
+          <Select value={levelFilter} onValueChange={setLevelFilter}>
+            <SelectTrigger className='w-[160px] bg-muted/40'>
+              <SelectValue placeholder='Level' />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='all'>All levels</SelectItem>
+              <SelectItem value='ERROR'>Error</SelectItem>
+              <SelectItem value='WARN'>Warn</SelectItem>
+              <SelectItem value='INFO'>Info</SelectItem>
+              <SelectItem value='DEBUG'>Debug</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {logsQuery.isLoading ? (
@@ -101,7 +157,13 @@ export function LogsPage() {
       ) : filteredLogs.length === 0 ? (
         <EmptyState title='No logs yet' description='Logs will appear as soon as services emit output.' />
       ) : (
-        <LogTable logs={filteredLogs} onSelect={setSelected} />
+        <LogTable
+          logs={filteredLogs}
+          onSelect={setSelected}
+          selectedIds={selectedIdSet}
+          onToggleSelection={toggleSelection}
+          onToggleSelectAllVisible={toggleSelectAllVisible}
+        />
       )}
 
       <Drawer open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>
@@ -123,6 +185,32 @@ export function LogsPage() {
                 onCreateEditor={(view) => setEditorView(view)}
               />
             </div>
+          )}
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer open={analysisOpen} onOpenChange={setAnalysisOpen}>
+        <DrawerContent className='overflow-y-auto'>
+          <DrawerHeader>
+            <DrawerTitle>Selected Log Analysis</DrawerTitle>
+            <DrawerDescription>
+              Groq explanation for the currently selected logs, with the supporting evidence shown below.
+            </DrawerDescription>
+          </DrawerHeader>
+          {analyzeSelectionMutation.data ? (
+            <AiAnalysisCard
+              summary={analyzeSelectionMutation.data.summary}
+              rootCause={analyzeSelectionMutation.data.likely_root_cause}
+              confidence={analyzeSelectionMutation.data.confidence}
+              actions={analyzeSelectionMutation.data.recommended_actions}
+              relatedSignals={analyzeSelectionMutation.data.related_signals}
+              evidenceLogs={selectedLogs}
+              onAction={() => analyzeSelectionMutation.mutate()}
+              actionLabel='Re-run selected-log analysis'
+              actionPending={analyzeSelectionMutation.isPending}
+            />
+          ) : (
+            <p className='text-sm text-muted-foreground'>Select logs and run analysis to see Groq output.</p>
           )}
         </DrawerContent>
       </Drawer>
