@@ -1,9 +1,10 @@
-﻿import { Badge } from './ui/badge'
-import { Button } from './ui/button'
+import { Badge } from './ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import type { Incident, LogEntry } from '../lib/api'
+import type { BadgeProps } from './ui/badge'
+import { AiAnalysisCard } from './ai-analysis-card'
 
-const severityVariant: Record<string, string> = {
+const severityVariant: Record<string, NonNullable<BadgeProps['variant']>> = {
   high: 'destructive',
   medium: 'secondary',
   low: 'outline'
@@ -29,7 +30,7 @@ export function IncidentDetail({
             <Badge variant={severityVariant[incident.severity] || 'default'}>{incident.severity}</Badge>
           </CardTitle>
           <p className='text-xs text-muted-foreground'>
-            Created {new Date(incident.created_at).toLocaleString()} · Status: {incident.status}
+            Created {new Date(incident.created_at).toLocaleString()} - Status: {incident.status}
           </p>
         </CardHeader>
         <CardContent className='space-y-2'>
@@ -49,7 +50,7 @@ export function IncidentDetail({
           <CardTitle>Timeline</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className='space-y-3'>
+          <div className='max-h-[28rem] space-y-3 overflow-y-auto pr-2'>
             {logs.length === 0 && (
               <p className='text-sm text-muted-foreground'>No correlated logs found.</p>
             )}
@@ -58,7 +59,7 @@ export function IncidentDetail({
                 <div className='mt-1 h-2 w-2 rounded-full bg-primary' />
                 <div>
                   <p className='text-sm font-medium'>
-                    {log.service} · {log.level}
+                    {log.service} - {log.level}
                   </p>
                   <p className='text-xs text-muted-foreground'>
                     {new Date(log.timestamp).toLocaleString()}
@@ -71,34 +72,16 @@ export function IncidentDetail({
         </CardContent>
       </Card>
 
-      <Card className='glass-panel'>
-        <CardHeader>
-          <CardTitle className='flex items-center justify-between'>
-            <span>AI Explanation</span>
-            <Button size='sm' onClick={onAnalyze} disabled={analyzing}>
-              {analyzing ? 'Analyzing...' : 'Re-run AI analysis'}
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className='space-y-3'>
-          <p className='text-sm text-muted-foreground'>Summary</p>
-          <p className='text-sm'>{incident.ai_summary || 'No AI summary available yet.'}</p>
-
-          <p className='text-sm text-muted-foreground'>Likely root cause</p>
-          <p className='text-sm'>{incident.ai_root_cause || 'Awaiting analysis.'}</p>
-
-          <p className='text-sm text-muted-foreground'>Recommended actions</p>
-          <ul className='list-disc pl-5 text-sm'>
-            {(incident.ai_actions || []).map((action, index) => (
-              <li key={`${action}-${index}`}>{action}</li>
-            ))}
-            {(incident.ai_actions || []).length === 0 && <li>Configure an LLM to enable recommendations.</li>}
-          </ul>
-
-          <p className='text-sm text-muted-foreground'>Confidence</p>
-          <p className='text-sm'>{incident.ai_confidence ?? 'N/A'}</p>
-        </CardContent>
-      </Card>
+      <AiAnalysisCard
+        summary={incident.ai_summary}
+        rootCause={incident.ai_root_cause}
+        confidence={incident.ai_confidence}
+        actions={incident.ai_actions}
+        relatedSignals={incident.ai_related_signals}
+        evidenceLogs={logs}
+        onAction={onAnalyze}
+        actionPending={analyzing}
+      />
     </div>
   )
 }

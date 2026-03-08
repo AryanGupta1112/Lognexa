@@ -33,20 +33,20 @@ export function IncidentDetailPage() {
     onError: () => toast.error('Failed to analyze incident')
   })
 
+  const incident = incidentQuery.data
+  const logs = useMemo(() => {
+    if (!incident || !logsQuery.data) return []
+    const evidence = new Set(incident.evidence_log_ids || [])
+    return logsQuery.data.filter((log) => evidence.has(log.id)).sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+  }, [logsQuery.data, incident])
+
   if (incidentQuery.isLoading) {
     return <p className='text-sm text-muted-foreground'>Loading incident...</p>
   }
 
-  if (incidentQuery.isError || !incidentQuery.data) {
+  if (incidentQuery.isError || !incident) {
     return <p className='text-sm text-muted-foreground'>Incident not found.</p>
   }
-
-  const incident = incidentQuery.data
-  const logs = useMemo(() => {
-    if (!logsQuery.data) return []
-    const evidence = new Set(incident.evidence_log_ids || [])
-    return logsQuery.data.filter((log) => evidence.has(log.id)).sort((a, b) => a.timestamp.localeCompare(b.timestamp))
-  }, [logsQuery.data, incident.evidence_log_ids])
 
   return (
     <IncidentDetail
