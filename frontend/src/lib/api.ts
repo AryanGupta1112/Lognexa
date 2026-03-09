@@ -36,12 +36,38 @@ export interface IncidentAnalyzeResponse {
   status: string
 }
 
+export interface LogSelectionAnalyzeResponse {
+  summary?: string | null
+  likely_root_cause?: string | null
+  confidence?: number | null
+  recommended_actions?: string[]
+  related_signals?: string[]
+}
+
 export interface ContainerInfo {
   id: string
   name: string
   service: string
   image: string
   status: string
+}
+
+export interface HealthResponse {
+  status: string
+  time: string
+  llm: {
+    provider: string
+    configured: boolean
+    model: string
+  }
+  vectordb: {
+    enabled: boolean
+    provider: string
+    url: string
+    collection: string
+    model: string
+    ready: boolean
+  }
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
@@ -59,9 +85,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export function getHealth() {
-  return request<{ status: string; time: string; llm: { ollama: boolean; huggingface: boolean } }>(
-    '/health'
-  )
+  return request<HealthResponse>('/health')
 }
 
 export function getContainers() {
@@ -114,6 +138,13 @@ export function getIncident(id: number) {
 
 export function analyzeIncident(id: number) {
   return request<IncidentAnalyzeResponse>(`/incidents/${id}/analyze`, { method: 'POST' })
+}
+
+export function analyzeSelectedLogs(logIds: number[]) {
+  return request<LogSelectionAnalyzeResponse>('/logs/analyze', {
+    method: 'POST',
+    body: JSON.stringify({ log_ids: logIds })
+  })
 }
 
 export function createLogStream(onMessage: (log: LogEntry) => void) {
