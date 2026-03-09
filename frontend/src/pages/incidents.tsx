@@ -22,7 +22,8 @@ export function IncidentsPage() {
       getIncidents({
         service: selectedService !== 'all' ? selectedService : undefined,
         start
-      })
+      }),
+    refetchInterval: 5000
   })
 
   useEffect(() => {
@@ -48,7 +49,7 @@ export function IncidentsPage() {
       ) : (
         <div className='grid gap-6 lg:grid-cols-[320px_1fr]'>
           <IncidentList incidents={incidentsQuery.data || []} />
-          <div className='min-h-[400px] rounded-lg border border-border/60 bg-muted/20 p-4'>
+          <div className='min-h-[400px] rounded-lg border border-border/60 bg-muted/20 p-4 lg:sticky lg:top-6 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto'>
             <Outlet />
           </div>
         </div>
