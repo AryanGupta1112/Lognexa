@@ -7,6 +7,7 @@ from typing import Callable, Dict, Any, List
 import docker
 from docker.errors import DockerException
 
+from .config import settings
 from .log_preprocessor import normalize_log, split_docker_line
 
 
@@ -18,6 +19,7 @@ class DockerLogCollector:
         self.client = None
         self.available = False
         self.container_cache: List[Dict[str, Any]] = []
+        self.excluded_services = {service.lower() for service in settings.collector_exclude_services}
 
     def start(self) -> None:
         try:
@@ -31,6 +33,9 @@ class DockerLogCollector:
 
         self._refresh_container_cache()
         for container in self.client.containers.list():
+            service = container.labels.get("com.docker.compose.service", container.name).lower()
+            if service in self.excluded_services:
+                continue
             thread = threading.Thread(target=self._stream_container_logs, args=(container,), daemon=True)
             thread.start()
             self.threads.append(thread)
