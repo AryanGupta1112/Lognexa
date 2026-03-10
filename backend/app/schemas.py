@@ -41,6 +41,18 @@ class IncidentAnalyzeResponse(BaseModel):
     status: str
 
 
+class LogSelectionAnalyzeRequest(BaseModel):
+    log_ids: List[int] = Field(default_factory=list)
+
+
+class LogSelectionAnalyzeResponse(BaseModel):
+    summary: Optional[str] = None
+    likely_root_cause: Optional[str] = None
+    confidence: Optional[float] = None
+    recommended_actions: List[str] = Field(default_factory=list)
+    related_signals: List[str] = Field(default_factory=list)
+
+
 class ContainerInfo(BaseModel):
     id: str
     name: str
@@ -49,7 +61,17 @@ class ContainerInfo(BaseModel):
     status: str
 
 
+class VectorDbHealth(BaseModel):
+    enabled: bool
+    provider: str
+    url: str
+    collection: str
+    model: str
+    ready: bool
+
+
 class HealthResponse(BaseModel):
     status: str
     time: datetime
     llm: Dict[str, Any]
+    vectordb: VectorDbHealth
