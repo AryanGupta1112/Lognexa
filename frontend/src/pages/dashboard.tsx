@@ -23,7 +23,8 @@ export function DashboardPage() {
         service: selectedService !== 'all' ? selectedService : undefined,
         start,
         limit: 500
-      })
+      }),
+    refetchInterval: 5000
   })
 
   const incidentsQuery = useQuery({
@@ -32,7 +33,8 @@ export function DashboardPage() {
       getIncidents({
         service: selectedService !== 'all' ? selectedService : undefined,
         start
-      })
+      }),
+    refetchInterval: 5000
   })
 
   useEffect(() => {
@@ -92,7 +94,9 @@ export function DashboardPage() {
         map[log.service] = (map[log.service] || 0) + 1
       }
     })
-    return Object.entries(map).map(([service, errors]) => ({ service, errors }))
+    return Object.entries(map)
+      .map(([service, errors]) => ({ service, errors }))
+      .sort((a, b) => b.errors - a.errors)
   }, [logs])
 
   const severityDistribution = useMemo(() => {
