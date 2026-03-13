@@ -2,6 +2,7 @@
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Query, HTTPException, Request
+from sqlalchemy import or_
 from sqlmodel import Session, select
 
 from .db import get_session
@@ -80,7 +81,16 @@ def logs(
     if level:
         stmt = stmt.where(LogEntry.level == level)
     if q:
-        stmt = stmt.where(LogEntry.message.contains(q))
+        pattern = f"%{q.strip()}%"
+        stmt = stmt.where(
+            or_(
+                LogEntry.message.ilike(pattern),
+                LogEntry.raw.ilike(pattern),
+                LogEntry.service.ilike(pattern),
+                LogEntry.level.ilike(pattern),
+                LogEntry.container_id.ilike(pattern),
+            )
+        )
     start_dt = _parse_dt(start)
     end_dt = _parse_dt(end)
     if start_dt:
@@ -134,8 +144,11 @@ def incidents(
     status: Optional[str] = None,
     severity: Optional[str] = None,
     service: Optional[str] = None,
+    q: Optional[str] = None,
     start: Optional[str] = None,
     end: Optional[str] = None,
+    limit: int = Query(200, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
     session: Session = Depends(get_session),
 ):
     stmt = select(Incident)
@@ -143,6 +156,16 @@ def incidents(
         stmt = stmt.where(Incident.status == status)
     if severity:
         stmt = stmt.where(Incident.severity == severity)
+    if q:
+        pattern = f"%{q.strip()}%"
+        stmt = stmt.where(
+            or_(
+                Incident.title.ilike(pattern),
+                Incident.signature.ilike(pattern),
+                Incident.severity.ilike(pattern),
+                Incident.status.ilike(pattern),
+            )
+        )
     start_dt = _parse_dt(start)
     end_dt = _parse_dt(end)
     if start_dt:
@@ -154,7 +177,23 @@ def incidents(
     results = session.exec(stmt).all()
     if service:
         results = [incident for incident in results if service in incident.services]
-    return results
+    if q:
+        term = q.strip().lower()
+        results = [
+            incident
+            for incident in results
+            if any(
+                term in (field or '').lower()
+                for field in [
+                    incident.title,
+                    incident.signature,
+                    incident.severity,
+                    incident.status,
+                    ' '.join(incident.services or []),
+                ]
+            )
+        ]
+    return results[offset : offset + limit]
 
 
 @router.get("/incidents/{incident_id}", response_model=IncidentRead)

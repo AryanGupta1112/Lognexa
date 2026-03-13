@@ -117,8 +117,11 @@ export interface IncidentQuery {
   status?: string
   severity?: string
   service?: string
+  q?: string
   start?: string
   end?: string
+  limit?: number
+  offset?: number
 }
 
 export function getIncidents(query: IncidentQuery) {
@@ -130,6 +133,40 @@ export function getIncidents(query: IncidentQuery) {
   })
   const qs = params.toString()
   return request<Incident[]>(`/incidents${qs ? `?${qs}` : ''}`)
+}
+
+export async function getAllLogs(query: LogQuery, pageSize = 500, maxPages = 200) {
+  const all: LogEntry[] = []
+  let offset = 0
+  let pageCount = 0
+
+  while (true) {
+    const page = await getLogs({ ...query, limit: pageSize, offset })
+    all.push(...page)
+    pageCount += 1
+    if (page.length < pageSize) break
+    if (pageCount >= maxPages) break
+    offset += pageSize
+  }
+
+  return all
+}
+
+export async function getAllIncidents(query: IncidentQuery, pageSize = 200, maxPages = 200) {
+  const all: Incident[] = []
+  let offset = 0
+  let pageCount = 0
+
+  while (true) {
+    const page = await getIncidents({ ...query, limit: pageSize, offset })
+    all.push(...page)
+    pageCount += 1
+    if (page.length < pageSize) break
+    if (pageCount >= maxPages) break
+    offset += pageSize
+  }
+
+  return all
 }
 
 export function getIncident(id: number) {
