@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 
 import { analyzeIncident, getIncident, getLogs } from '../lib/api'
 import { IncidentDetail } from '../components/incident-detail'
+import { parseApiDate } from '../lib/time'
 
 export function IncidentDetailPage() {
   const params = useParams({ from: '/incidents/$incidentId' })
@@ -37,7 +38,9 @@ export function IncidentDetailPage() {
   const logs = useMemo(() => {
     if (!incident || !logsQuery.data) return []
     const evidence = new Set(incident.evidence_log_ids || [])
-    return logsQuery.data.filter((log) => evidence.has(log.id)).sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+    return logsQuery.data
+      .filter((log) => evidence.has(log.id))
+      .sort((a, b) => parseApiDate(a.timestamp).getTime() - parseApiDate(b.timestamp).getTime())
   }, [logsQuery.data, incident])
 
   if (incidentQuery.isLoading) {

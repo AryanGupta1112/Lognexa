@@ -3,11 +3,19 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import type { Incident, LogEntry } from '../lib/api'
 import type { BadgeProps } from './ui/badge'
 import { AiAnalysisCard } from './ai-analysis-card'
+import { formatDateTime } from '../lib/time'
 
 const severityVariant: Record<string, NonNullable<BadgeProps['variant']>> = {
   high: 'destructive',
   medium: 'secondary',
   low: 'outline'
+}
+
+function cleanMessageForDisplay(message: string) {
+  return message
+    .replace(/\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?\b/, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
 }
 
 export function IncidentDetail({
@@ -30,7 +38,7 @@ export function IncidentDetail({
             <Badge variant={severityVariant[incident.severity] || 'default'}>{incident.severity}</Badge>
           </CardTitle>
           <p className='text-xs text-muted-foreground'>
-            Created {new Date(incident.created_at).toLocaleString()} - Status: {incident.status}
+            Created {formatDateTime(incident.created_at)} - Status: {incident.status}
           </p>
         </CardHeader>
         <CardContent className='space-y-2'>
@@ -62,9 +70,9 @@ export function IncidentDetail({
                     {log.service} - {log.level}
                   </p>
                   <p className='text-xs text-muted-foreground'>
-                    {new Date(log.timestamp).toLocaleString()}
+                    {formatDateTime(log.timestamp)}
                   </p>
-                  <p className='text-sm'>{log.message}</p>
+                  <p className='text-sm'>{cleanMessageForDisplay(log.message)}</p>
                 </div>
               </div>
             ))}
