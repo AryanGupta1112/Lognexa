@@ -3,12 +3,20 @@ import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import type { LogEntry } from '../lib/api'
 import type { BadgeProps } from './ui/badge'
+import { formatDateTime } from '../lib/time'
 
 const levelVariant: Record<string, NonNullable<BadgeProps['variant']>> = {
   ERROR: 'destructive',
   WARN: 'secondary',
   INFO: 'default',
   DEBUG: 'outline'
+}
+
+function cleanMessageForDisplay(message: string) {
+  return message
+    .replace(/\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?\b/, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
 }
 
 export function AiAnalysisCard({
@@ -104,9 +112,9 @@ export function AiAnalysisCard({
                   <div className='mb-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground'>
                     <Badge variant={levelVariant[log.level] || 'default'}>{log.level}</Badge>
                     <span>{log.service}</span>
-                    <span>{new Date(log.timestamp).toLocaleString()}</span>
+                    <span>{formatDateTime(log.timestamp)}</span>
                   </div>
-                  <p className='text-sm'>{log.message}</p>
+                  <p className='text-sm'>{cleanMessageForDisplay(log.message)}</p>
                 </div>
               ))}
             </div>
