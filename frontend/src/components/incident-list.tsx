@@ -3,6 +3,7 @@ import { Badge } from './ui/badge'
 import type { Incident } from '../lib/api'
 import { cn } from '../lib/utils'
 import type { BadgeProps } from './ui/badge'
+import { formatDateTime } from '../lib/time'
 
 const severityVariant: Record<string, NonNullable<BadgeProps['variant']>> = {
   high: 'destructive',
@@ -10,10 +11,27 @@ const severityVariant: Record<string, NonNullable<BadgeProps['variant']>> = {
   low: 'outline'
 }
 
-export function IncidentList({ incidents }: { incidents: Incident[] }) {
+export function IncidentList({
+  incidents,
+  hasMore,
+  isFetchingMore,
+  onLoadMore,
+}: {
+  incidents: Incident[]
+  hasMore: boolean
+  isFetchingMore: boolean
+  onLoadMore: () => void
+}) {
   const location = useRouterState({ select: (s) => s.location })
   return (
-    <div className='space-y-3'>
+    <div
+      className='max-h-[calc(100vh-12rem)] space-y-3 overflow-y-auto pr-1'
+      onScroll={(event) => {
+        const target = event.currentTarget
+        const nearBottom = target.scrollTop + target.clientHeight >= target.scrollHeight - 120
+        if (nearBottom && hasMore && !isFetchingMore) onLoadMore()
+      }}
+    >
       {incidents.map((incident) => {
         const active = location.pathname.endsWith(`/incidents/${incident.id}`)
         return (
@@ -30,7 +48,7 @@ export function IncidentList({ incidents }: { incidents: Incident[] }) {
               <div>
                 <p className='text-sm font-medium'>{incident.title}</p>
                 <p className='text-xs text-muted-foreground'>
-                  {incident.services.join(', ') || 'Unknown'} - {new Date(incident.created_at).toLocaleString()}
+                  {incident.services.join(', ') || 'Unknown'} - {formatDateTime(incident.created_at)}
                 </p>
               </div>
               <Badge variant={severityVariant[incident.severity] || 'default'}>{incident.severity}</Badge>
@@ -43,6 +61,11 @@ export function IncidentList({ incidents }: { incidents: Incident[] }) {
           No incidents detected in this window.
         </div>
       )}
+      {isFetchingMore ? (
+        <div className='rounded-lg border border-border/40 px-3 py-2 text-xs text-muted-foreground'>
+          Loading more incidents...
+        </div>
+      ) : null}
     </div>
   )
 }
