@@ -12,7 +12,8 @@ const ranges = [
   { value: '15m', label: 'Last 15m' },
   { value: '1h', label: 'Last 1h' },
   { value: '6h', label: 'Last 6h' },
-  { value: '24h', label: 'Last 24h' }
+  { value: '24h', label: 'Last 24h' },
+  { value: 'custom', label: 'Custom range' },
 ]
 
 export function TopBar() {
@@ -23,6 +24,10 @@ export function TopBar() {
   const setSelectedService = useUiStore((s) => s.setSelectedService)
   const timeRange = useUiStore((s) => s.timeRange)
   const setTimeRange = useUiStore((s) => s.setTimeRange)
+  const customStart = useUiStore((s) => s.customStart)
+  const customEnd = useUiStore((s) => s.customEnd)
+  const setCustomStart = useUiStore((s) => s.setCustomStart)
+  const setCustomEnd = useUiStore((s) => s.setCustomEnd)
   const theme = useUiStore((s) => s.theme)
   const setTheme = useUiStore((s) => s.setTheme)
 
@@ -69,6 +74,24 @@ export function TopBar() {
           ))}
         </SelectContent>
       </Select>
+      {timeRange === 'custom' ? (
+        <>
+          <Input
+            type='datetime-local'
+            value={customStart}
+            onChange={(e) => setCustomStart(e.target.value)}
+            className='w-[210px] bg-muted/40'
+            aria-label='Start date and time'
+          />
+          <Input
+            type='datetime-local'
+            value={customEnd}
+            onChange={(e) => setCustomEnd(e.target.value)}
+            className='w-[210px] bg-muted/40'
+            aria-label='End date and time'
+          />
+        </>
+      ) : null}
       <Button
         variant='outline'
         size='icon'
